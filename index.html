@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>婚礼邀请函批量生成</title>
+<style>
+  @font-face{
+    font-family:'WeddingFont';
+    src:url('fonts/SourceHanSerif-Medium.ttc');
+    font-display:swap;
+  }
+  :root{
+    --bg1:#f7efe7; --bg2:#efe0d2; --card:#fffdfb; --line:#e7d6c7;
+    --ink:#4a3a30; --muted:#9a8778; --brand:#b4794f; --brand-d:#9c6238;
+    --accent:#c99a6a; --shadow:0 8px 24px rgba(120,80,50,.10);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  body{margin:0;min-height:100vh;color:var(--ink);
+    font-family:'WeddingFont',-apple-system,system-ui,"PingFang SC","Microsoft YaHei",serif;
+    background:linear-gradient(160deg,var(--bg1),var(--bg2));
+    background-attachment:fixed;padding:20px 14px 36px;}
+  .wrap{max-width:680px;margin:0 auto;}
+
+  header{text-align:center;margin:6px 0 20px;}
+  header .orn{color:var(--brand);letter-spacing:.5em;font-size:13px;opacity:.75;}
+  h1{font-size:23px;font-weight:500;margin:8px 0 4px;letter-spacing:.08em;}
+  header .sub{font-size:12px;color:var(--muted);letter-spacing:.25em;}
+  .divider{display:flex;align-items:center;justify-content:center;gap:10px;margin:12px 0 2px;}
+  .divider::before,.divider::after{content:"";height:1px;width:46px;
+    background:linear-gradient(90deg,transparent,var(--line),transparent);}
+  .divider span{color:var(--brand);font-size:12px;}
+
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;
+    padding:16px;margin-bottom:16px;box-shadow:var(--shadow);}
+  .ttl{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--brand-d);
+    letter-spacing:.1em;margin:0 0 12px;}
+  .ttl::before{content:"";width:3px;height:14px;border-radius:2px;background:var(--brand);}
+
+  .stage{position:relative;width:100%;touch-action:none;border-radius:12px;overflow:hidden;
+    background:repeating-conic-gradient(#f0e7df 0% 25%,#e9ddd1 0% 50%) 50%/18px 18px;
+    border:1px solid var(--line);}
+  canvas{display:block;width:100%;height:auto;cursor:crosshair;}
+  .hint{font-size:12px;color:var(--muted);margin-top:10px;line-height:1.6;}
+  .hint b{color:var(--brand-d);font-weight:600;}
+  .coord{font-size:12px;color:var(--muted);margin-top:6px;font-variant-numeric:tabular-nums;}
+
+  .row{display:flex;align-items:center;gap:12px;margin:12px 0;flex-wrap:wrap;}
+  .row:first-of-type{margin-top:0;}
+  label{font-size:13px;min-width:40px;color:var(--ink);}
+  .val{font-size:13px;min-width:44px;text-align:right;color:var(--brand-d);
+    font-variant-numeric:tabular-nums;}
+
+  input[type=range]{flex:1;min-width:140px;height:4px;border-radius:4px;appearance:none;
+    background:linear-gradient(90deg,var(--brand),var(--accent));outline:none;}
+  input[type=range]::-webkit-slider-thumb{appearance:none;width:20px;height:20px;border-radius:50%;
+    background:#fff;border:2px solid var(--brand);box-shadow:0 2px 6px rgba(120,80,50,.3);cursor:pointer;}
+  input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;
+    background:#fff;border:2px solid var(--brand);cursor:pointer;}
+
+  input[type=color]{width:38px;height:30px;border:1px solid var(--line);border-radius:8px;
+    background:none;padding:2px;cursor:pointer;}
+
+  .seg{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;}
+  .seg button{border:none;background:#fff;padding:7px 15px;font:inherit;font-size:13px;
+    color:var(--ink);cursor:pointer;transition:background .15s,color .15s;}
+  .seg button+button{border-left:1px solid var(--line);}
+  .seg button.on{background:var(--brand);color:#fff;}
+
+  textarea{width:100%;height:150px;font:inherit;font-size:14px;padding:12px;
+    border:1px solid var(--line);border-radius:12px;resize:vertical;line-height:1.7;
+    background:#fffdfb;color:var(--ink);outline:none;transition:border-color .15s,box-shadow .15s;}
+  textarea:focus{border-color:var(--brand);box-shadow:0 0 0 3px rgba(180,121,79,.12);}
+
+  .btn{display:block;width:100%;border:none;border-radius:12px;padding:14px;font:inherit;
+    font-size:16px;letter-spacing:.05em;cursor:pointer;color:#fff;margin-top:10px;
+    background:linear-gradient(135deg,var(--brand),var(--brand-d));
+    box-shadow:0 4px 14px rgba(156,98,56,.28);transition:transform .12s,box-shadow .12s,opacity .15s;}
+  .btn:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(156,98,56,.34);}
+  .btn:active{transform:translateY(0);}
+  .btn.sub{background:#fff;color:var(--brand-d);border:1px solid var(--brand);box-shadow:none;}
+  .btn.sub:hover{background:#fbf3ec;}
+  .btn.ghost{width:auto;margin-top:0;padding:9px 16px;font-size:14px;}
+  .btn:disabled{opacity:.5;transform:none;cursor:default;box-shadow:none;}
+
+  .bar{height:8px;background:#efe3d8;border-radius:6px;overflow:hidden;margin-top:14px;display:none;}
+  .bar>i{display:block;height:100%;width:0;border-radius:6px;
+    background:linear-gradient(90deg,var(--brand),var(--accent));transition:width .15s;}
+  .status{font-size:12px;color:var(--muted);margin-top:8px;text-align:center;min-height:16px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="orn">&#10087; &#10087; &#10087;</div>
+    <h1>婚礼邀请函</h1>
+    <div class="sub">姓名批量生成</div>
+    <div class="divider"><span>&#9825;</span></div>
+  </header>
+
+  <div class="card">
+    <div class="ttl">模板</div>
+    <div class="row">
+      <button class="btn sub ghost" id="pickImg">导入模板图片</button>
+      <span class="val" id="imgInfo" style="flex:1;text-align:left;">默认模板</span>
+      <input type="file" id="imgFile" accept="image/*" style="display:none;">
+    </div>
+    <div class="stage"><canvas id="cv"></canvas></div>
+    <div class="hint">可<b>导入自己的模板图片</b>；在图片上<b>点击或拖动</b>确定姓名位置，方向键可微调。预览显示名单第一个姓名。</div>
+    <div class="coord" id="coord">位置：—</div>
+  </div>
+
+  <div class="card">
+    <div class="ttl">文字样式</div>
+    <div class="row">
+      <label>字号</label>
+      <input type="range" id="fsize" min="12" max="160" value="38">
+      <span class="val" id="fsizeV">38</span>
+    </div>
+    <div class="row">
+      <label>颜色</label>
+      <input type="color" id="color" value="#ffffff">
+      <label style="min-width:auto;margin-left:12px;">对齐</label>
+      <div class="seg" id="align">
+        <button data-a="left" class="on">左</button>
+        <button data-a="center">中</button>
+        <button data-a="right">右</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="ttl">宾客名单（每行一个）</div>
+    <textarea id="names" placeholder="每行一个姓名，例如：&#10;陈先生&#10;李女士一家"></textarea>
+    <button class="btn sub" id="dlOne">下载当前预览图</button>
+    <button class="btn" id="gen">批量生成并下载 ZIP</button>
+    <div class="bar" id="bar"><i></i></div>
+    <div class="status" id="status"></div>
+  </div>
+<script>
+const TEMPLATE = 'images/template.png';
+const cv = document.getElementById('cv');
+const ctx = cv.getContext('2d');
+const img = new Image();
+
+// 状态（坐标以原图像素为准）
+let posX = 866, posY = 330;   // 对应原 main.py 的 NAME_POSITION
+let fontSize = 38;
+let color = '#ffffff';
+let align = 'left';
+let scale = 1;                // 显示宽 / 原图宽
+
+let textBox = null;           // 当前文字在显示坐标下的包围盒 {x,y,w,h}
+let dragging = false;
+
+const $ = id => document.getElementById(id);
+
+function sampleName(){
+  const list = parseNames();
+  return list.length ? list[0] : '示例姓名';
+}
+
+// 在指定 context 上画一个姓名；coords 为原图像素，s 为缩放系数
+function drawName(c, text, x, y, s){
+  c.save();
+  c.font = (fontSize * s) + 'px "WeddingFont", serif';
+  c.textAlign = align;
+  c.textBaseline = 'top';          // 与 PIL 默认左上锚点一致
+  c.fillStyle = color;
+  c.fillText(text, x * s, y * s);
+  c.restore();
+}
+
+function render(){
+  if(!img.complete || !img.naturalWidth) return;
+  const dispW = cv.clientWidth || 320;
+  scale = dispW / img.naturalWidth;
+  cv.width = img.naturalWidth * scale;
+  cv.height = img.naturalHeight * scale;
+  ctx.clearRect(0,0,cv.width,cv.height);
+  ctx.drawImage(img,0,0,cv.width,cv.height);
+
+  const text = sampleName();
+  drawName(ctx, text, posX, posY, scale);
+
+  // 计算显示坐标下的文字包围盒（用于命中测试与高亮）
+  ctx.font = (fontSize * scale) + 'px "WeddingFont", serif';
+  const w = ctx.measureText(text).width;
+  const h = fontSize * scale;
+  let bx = posX * scale;
+  if(align === 'center') bx -= w/2;
+  else if(align === 'right') bx -= w;
+  textBox = {x: bx, y: posY * scale, w, h};
+
+  // 虚线高亮框，始终显示；拖动时加粗提示
+  ctx.save();
+  ctx.strokeStyle = dragging ? 'rgba(180,121,79,.95)' : 'rgba(180,121,79,.5)';
+  ctx.lineWidth = dragging ? 2 : 1;
+  ctx.setLineDash([5,4]);
+  const pad = 4;
+  ctx.strokeRect(textBox.x-pad, textBox.y-pad, textBox.w+pad*2, textBox.h+pad*2);
+  ctx.restore();
+
+  $('coord').textContent = `位置：x=${Math.round(posX)}  y=${Math.round(posY)}（原图像素）`;
+}
+
+// ---- 交互：拖动文字 / 点击空白处放置 ----
+// 将指针事件换算到显示坐标
+function evDisp(e){
+  const r = cv.getBoundingClientRect();
+  const px = (e.touches ? e.touches[0].clientX : e.clientX) - r.left;
+  const py = (e.touches ? e.touches[0].clientY : e.clientY) - r.top;
+  return {px: px * (cv.width / r.width), py: py * (cv.height / r.height)};
+}
+function clampAnchor(dx, dy){
+  posX = Math.max(0, Math.min(img.naturalWidth,  dx / scale));
+  posY = Math.max(0, Math.min(img.naturalHeight, dy / scale));
+}
+let grab = {dx:0, dy:0};        // 指针与锚点的偏移，避免文字跳到手指下
+function hitText(px, py){
+  if(!textBox) return false;
+  const pad = 10;               // 命中容差，手指更好点
+  return px >= textBox.x-pad && px <= textBox.x+textBox.w+pad &&
+         py >= textBox.y-pad && py <= textBox.y+textBox.h+pad;
+}
+cv.addEventListener('pointerdown', e=>{
+  const {px,py} = evDisp(e);
+  dragging = true;
+  cv.setPointerCapture(e.pointerId);
+  if(hitText(px,py)){
+    // 命中文字：记录偏移，拖动时文字不跳位
+    grab.dx = posX*scale - px;
+    grab.dy = posY*scale - py;
+  }else{
+    // 点在空白：把锚点放到此处，并以此为基准继续拖动
+    grab.dx = 0; grab.dy = 0;
+    clampAnchor(px, py);
+  }
+  cv.style.cursor = 'grabbing';
+  render();
+});
+cv.addEventListener('pointermove', e=>{
+  const {px,py} = evDisp(e);
+  if(dragging){
+    clampAnchor(px + grab.dx, py + grab.dy);
+    render();
+  }else{
+    cv.style.cursor = hitText(px,py) ? 'grab' : 'crosshair';
+  }
+});
+function endDrag(){ dragging=false; cv.style.cursor='grab'; render(); }
+cv.addEventListener('pointerup', endDrag);
+cv.addEventListener('pointercancel', endDrag);
+
+// 方向键微调（1px，按住 Shift 为 10px）
+window.addEventListener('keydown', e=>{
+  const step = e.shiftKey ? 10 : 1;
+  let used = true;
+  if(e.key==='ArrowLeft') posX-=step;
+  else if(e.key==='ArrowRight') posX+=step;
+  else if(e.key==='ArrowUp') posY-=step;
+  else if(e.key==='ArrowDown') posY+=step;
+  else used=false;
+  if(used){
+    e.preventDefault();
+    posX=Math.max(0,Math.min(img.naturalWidth,posX));
+    posY=Math.max(0,Math.min(img.naturalHeight,posY));
+    render();
+  }
+});
+
+// ---- 控件 ----
+$('fsize').addEventListener('input', e=>{fontSize=+e.target.value; $('fsizeV').textContent=fontSize; render();});
+$('color').addEventListener('input', e=>{color=e.target.value; render();});
+$('align').addEventListener('click', e=>{
+  const b=e.target.closest('button'); if(!b) return;
+  align=b.dataset.a;
+  [...$('align').children].forEach(x=>x.classList.toggle('on', x===b));
+  render();
+});
+$('names').addEventListener('input', render);
+
+// ---- 名单解析（沿用 main.py：跳过空行与以 " 1" 结尾的已完成项）----
+function parseNames(){
+  return $('names').value.split('\n')
+    .map(s=>s.trim())
+    .filter(s=>s && !/ 1$/.test(s));
+}
+function safeName(n){ return n.replace(/[\/\\:*?"<>|]/g,'_'); }
+
+// ---- 载入模板与名单 ----
+img.onload = ()=>{ $('imgInfo').textContent = `${img.naturalWidth}×${img.naturalHeight}`; render(); };
+img.onerror = ()=>{ $('status').textContent='默认模板加载失败，可点「导入模板图片」选择本地图片。'; };
+img.src = TEMPLATE;
+window.addEventListener('resize', render);
+if(document.fonts && document.fonts.ready){ document.fonts.ready.then(render); }
+
+// ---- 导入本地模板图片 ----
+$('pickImg').addEventListener('click', ()=>$('imgFile').click());
+$('imgFile').addEventListener('change', e=>{
+  const f = e.target.files && e.target.files[0];
+  if(!f) return;
+  const url = URL.createObjectURL(f);
+  const prev = img.src;
+  img.onerror = ()=>{ $('status').textContent='图片解码失败，请换一张。'; URL.revokeObjectURL(url); };
+  img.onload = ()=>{
+    $('imgInfo').textContent = `${f.name}（${img.naturalWidth}×${img.naturalHeight}）`;
+    $('status').textContent = '';
+    if(prev.startsWith('blob:')) URL.revokeObjectURL(prev);
+    // 新模板尺寸不同，锚点回到中心避免跑到画面外
+    posX = img.naturalWidth/2; posY = img.naturalHeight/2;
+    render();
+  };
+  img.src = url;
+});
+
+// 尝试预填名单
+fetch('names.txt').then(r=>r.ok?r.text():Promise.reject()).then(t=>{
+  const kept = t.split('\n').map(s=>s.trim()).filter(s=>s && !/ 1$/.test(s));
+  if(kept.length){ $('names').value = kept.join('\n'); render(); }
+}).catch(()=>{});
+
+// ---- 原图分辨率渲染单张 ----
+function renderFull(name){
+  const c = document.createElement('canvas');
+  c.width = img.naturalWidth; c.height = img.naturalHeight;
+  const fc = c.getContext('2d');
+  fc.drawImage(img,0,0);
+  drawName(fc, name, posX, posY, 1);
+  return c;
+}
+function downloadBlob(blob, filename){
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob); a.download=filename;
+  document.body.appendChild(a); a.click();
+  setTimeout(()=>{URL.revokeObjectURL(a.href); a.remove();}, 1000);
+}
+
+// 下载当前预览（单张）
+$('dlOne').addEventListener('click', ()=>{
+  const name = sampleName();
+  renderFull(name).toBlob(b=>downloadBlob(b, safeName(name)+'.jpg'), 'image/jpeg', 0.95);
+});
+
+// ---- 轻量 ZIP（store，无压缩；JPEG 已压缩）----
+const crcTable=(()=>{const t=[];for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t[n]=c>>>0;}return t;})();
+function crc32(b){let c=-1;for(let i=0;i<b.length;i++)c=(c>>>8)^crcTable[(c^b[i])&0xFF];return(c^-1)>>>0;}
+function makeZip(files){
+  const enc=new TextEncoder(); const parts=[]; const central=[]; let off=0;
+  for(const f of files){
+    const nb=enc.encode(f.name), crc=crc32(f.data), sz=f.data.length;
+    const lh=new DataView(new ArrayBuffer(30));
+    lh.setUint32(0,0x04034b50,true);lh.setUint16(4,20,true);lh.setUint16(6,0x0800,true);
+    lh.setUint16(8,0,true);lh.setUint16(10,0,true);lh.setUint16(12,0,true);
+    lh.setUint32(14,crc,true);lh.setUint32(18,sz,true);lh.setUint32(22,sz,true);
+    lh.setUint16(26,nb.length,true);lh.setUint16(28,0,true);
+    const lhb=new Uint8Array(lh.buffer);
+    parts.push(lhb,nb,f.data);
+    const ch=new DataView(new ArrayBuffer(46));
+    ch.setUint32(0,0x02014b50,true);ch.setUint16(4,20,true);ch.setUint16(6,20,true);
+    ch.setUint16(8,0x0800,true);ch.setUint16(10,0,true);ch.setUint16(12,0,true);ch.setUint16(14,0,true);
+    ch.setUint32(16,crc,true);ch.setUint32(20,sz,true);ch.setUint32(24,sz,true);
+    ch.setUint16(28,nb.length,true);ch.setUint16(30,0,true);ch.setUint16(32,0,true);
+    ch.setUint16(34,0,true);ch.setUint16(36,0,true);ch.setUint32(38,0,true);ch.setUint32(42,off,true);
+    central.push({h:new Uint8Array(ch.buffer),n:nb});
+    off+=lhb.length+nb.length+f.data.length;
+  }
+  const cStart=off; let cSize=0;
+  for(const c of central){parts.push(c.h,c.n);cSize+=c.h.length+c.n.length;}
+  const eo=new DataView(new ArrayBuffer(22));
+  eo.setUint32(0,0x06054b50,true);eo.setUint16(8,files.length,true);eo.setUint16(10,files.length,true);
+  eo.setUint32(12,cSize,true);eo.setUint32(16,cStart,true);
+  parts.push(new Uint8Array(eo.buffer));
+  return new Blob(parts,{type:'application/zip'});
+}
+
+// ---- 批量生成 ----
+$('gen').addEventListener('click', async ()=>{
+  const names = parseNames();
+  if(!names.length){ $('status').textContent='名单为空。'; return; }
+  if(!img.naturalWidth){ $('status').textContent='模板未加载。'; return; }
+  $('gen').disabled = $('dlOne').disabled = true;
+  $('bar').style.display='block';
+  const files=[]; const used={};
+  for(let i=0;i<names.length;i++){
+    const c = renderFull(names[i]);
+    const blob = await new Promise(r=>c.toBlob(r,'image/jpeg',0.95));
+    const buf = new Uint8Array(await blob.arrayBuffer());
+    let fn = safeName(names[i]); if(used[fn]) fn+='_'+(used[fn]++); else used[fn]=1;
+    files.push({name: fn+'.jpg', data: buf});
+    const p = Math.round((i+1)/names.length*100);
+    $('bar').firstElementChild.style.width = p+'%';
+    $('status').textContent = `生成中 ${i+1}/${names.length}`;
+    await new Promise(r=>setTimeout(r)); // 让 UI 刷新
+  }
+  downloadBlob(makeZip(files), 'invitations.zip');
+  $('status').textContent = `完成，共 ${files.length} 张，已下载 invitations.zip`;
+  $('gen').disabled = $('dlOne').disabled = false;
+});
+</script>
+
+</div>
+</body>
+</html>
